@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Project Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --bg:#ffffff;--bg2:#f8f9fa;--bg3:#f1f3f5;
+  --border:#e9ecef;--border2:#ced4da;
+  --t1:#1a1a2e;--t2:#6c757d;--t3:#adb5bd;
+  --blue:#2563eb;--green:#16a34a;--amber:#d97706;--red:#dc2626;
+  --blue-bg:#eff6ff;--green-bg:#f0fdf4;--amber-bg:#fffbeb;--red-bg:#fef2f2;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1117;--bg2:#161b22;--bg3:#1c2128;
+    --border:#21262d;--border2:#30363d;
+    --t1:#e6edf3;--t2:#8b949e;--t3:#484f58;
+    --blue:#3b82f6;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;
+    --blue-bg:#1a2744;--green-bg:#14291a;--amber-bg:#271f0c;--red-bg:#271212;
+    --shadow:0 1px 3px rgba(0,0,0,.3);
+  }
+}
+body{font-family:var(--font);background:var(--bg3);color:var(--t1);min-height:100vh;line-height:1.5}
+.app{max-width:900px;margin:0 auto;padding:32px 20px 64px}
+
+/* Header */
+.header{margin-bottom:28px}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:36px;height:36px;background:var(--t1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:700;font-size:14px;font-family:var(--mono);flex-shrink:0}
+.header h1{font-size:22px;font-weight:600;letter-spacing:-.4px}
+.header p{font-size:13px;color:var(--t2);margin-top:2px}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.overall-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px;font-family:var(--mono);border:1px solid transparent;transition:all .3s;white-space:nowrap}
+.sync-status{font-size:11px;color:var(--t3);font-family:var(--mono);display:flex;align-items:center;gap:5px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.saving{background:var(--amber);animation:pulse .8s infinite}
+.sync-dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.stat-n{font-size:26px;font-weight:600;font-family:var(--mono);letter-spacing:-1.5px;line-height:1}
+.stat-l{font-size:12px;color:var(--t2);margin-top:4px}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;transition:all .15s;font-family:var(--font)}
+.tab.on{color:var(--t1);border-bottom-color:var(--t1)}
+.tab:hover:not(.on){color:var(--t1)}
+.view{display:none}.view.on{display:block}
+
+/* Config banner */
+.config-banner{background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--t1)}
+.config-banner strong{color:var(--amber)}
+.config-banner code{background:var(--bg3);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:12px}
+.config-banner a{color:var(--blue)}
+
+/* Milestone cards */
+.ms-list{display:flex;flex-direction:column;gap:8px}
+.ms-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.ms-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;transition:background .12s}
+.ms-head:hover{background:var(--bg2)}
+.ms-num{font-family:var(--mono);font-size:11px;color:var(--t3);min-width:26px;font-weight:500}
+.ms-info{flex:1;min-width:0}
+.ms-title{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-sub{font-size:12px;color:var(--t2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-bar-wrap{width:72px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0}
+.ms-bar{height:4px;border-radius:2px;transition:width .4s,background .3s}
+.ms-pct{font-family:var(--mono);font-size:11px;color:var(--t2);min-width:30px;text-align:right}
+.ms-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s;flex-shrink:0}
+.ms-card:hover .ms-actions{opacity:1}
+.ms-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:all .12s;font-size:13px;flex-shrink:0}
+.ms-btn:hover{background:var(--bg3);color:var(--t1)}
+.ms-btn.del:hover{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.ms-chevron{font-size:9px;color:var(--t3);transition:transform .2s;flex-shrink:0;margin-left:2px}
+.ms-card.open .ms-chevron{transform:rotate(180deg)}
+.ms-body{display:none;padding:0 16px 14px}
+.ms-card.open .ms-body{display:block}
+
+/* Tasks */
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border)}
+.task-row:first-child{border-top:none;padding-top:10px}
+.cb{width:17px;height:17px;border:1.5px solid var(--border2);border-radius:4px;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--bg)}
+.cb:hover{border-color:var(--green)}
+.cb.done{background:var(--green);border-color:var(--green)}
+.cb.done::after{content:'✓';font-size:9px;color:#fff;font-weight:700;line-height:1}
+.cb.prog{border-color:var(--blue);border-width:2px}
+.task-text{flex:1;font-size:13px;line-height:1.5}
+.task-text.done{color:var(--t3);text-decoration:line-through}
+.tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;cursor:pointer;white-space:nowrap;transition:all .15s;border:1px solid transparent;flex-shrink:0}
+.tag:hover{opacity:.8}
+.tag.todo{background:var(--bg3);color:var(--t2);border-color:var(--border)}
+.tag.prog{background:var(--blue-bg);color:var(--blue)}
+.tag.done{background:var(--green-bg);color:var(--green)}
+.tag.block{background:var(--red-bg);color:var(--red)}
+.task-del{width:18px;height:18px;border-radius:4px;border:none;background:none;cursor:pointer;color:var(--t3);font-size:16px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s;padding:0;line-height:1;flex-shrink:0}
+.task-row:hover .task-del{opacity:1}
+.task-del:hover{color:var(--red)}
+.add-task-row{display:flex;align-items:center;gap:8px;padding:8px 0 0;border-top:1px solid var(--border);margin-top:4px}
+.add-task-input{flex:1;border:1px solid var(--border);background:var(--bg2);color:var(--t1);border-radius:6px;padding:6px 10px;font-size:13px;font-family:var(--font);outline:none;transition:border-color .15s}
+.add-task-input:focus{border-color:var(--blue)}
+.add-task-input::placeholder{color:var(--t3)}
+.add-task-btn{padding:6px 12px;background:var(--t1);color:var(--bg);border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);transition:opacity .15s;white-space:nowrap}
+.add-task-btn:hover{opacity:.85}
+.add-ms-btn{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--bg);border:1px dashed var(--border2);border-radius:var(--radius);cursor:pointer;color:var(--t2);font-size:13px;font-family:var(--font);width:100%;transition:all .15s;margin-top:8px}
+.add-ms-btn:hover{border-color:var(--t1);color:var(--t1);background:var(--bg2)}
+
+/* Sprint view */
+.sprint-section{margin-bottom:20px}
+.sprint-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:10px}
+.sprint-task{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;box-shadow:var(--shadow)}
+.sprint-ms{font-family:var(--mono);font-size:10px;color:var(--t3);min-width:22px}
+.sprint-body{flex:1;min-width:0}
+.sprint-ms-name{font-size:11px;color:var(--t2);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sprint-task-text{font-size:13px}
+.empty-sprint{padding:20px;text-align:center;color:var(--t2);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--bg)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:500;color:var(--t2);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.form-input{width:100%;border:1px solid var(--border2);background:var(--bg2);color:var(--t1);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font);outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--blue)}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);border:none;transition:all .15s}
+.btn-primary{background:var(--t1);color:var(--bg)}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{background:var(--bg3);color:var(--t2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--t1)}
+
+/* Loading overlay */
+.loading{position:fixed;inset:0;background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loading-spinner{width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--t1);border-radius:50%;animation:spin .7s linear infinite}
+.loading p{font-size:13px;color:var(--t2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--t1);color:var(--bg);padding:9px 16px;border-radius:9px;font-size:12px;font-weight:500;font-family:var(--mono);opacity:0;transform:translateY(6px);transition:all .25s;pointer-events:none;z-index:200}
+.toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div class="loading" id="loading-screen">
+  <div class="loading-spinner"></div>
+  <p>Loading tracker data…</p>
+</div>
+
+<!-- Config banner (shown if not configured) -->
+<div class="config-banner" id="config-banner" style="display:none">
+  <strong>⚙️ One-time setup required</strong><br>
+  Open this file in a text editor and replace the two values at the top of the <code>&lt;script&gt;</code>:<br>
+  1. <strong>BIN_ID</strong> — your JSONBin bin ID (from jsonbin.io)<br>
+  2. <strong>API_KEY</strong> — your JSONBin access key<br>
+  See the <a href="https://jsonbin.io/api-reference" target="_blank">JSONBin docs</a> for how to create a free account and bin.
+</div>
+
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-mark">L</div>
+        <div>
+          <h1>Ledger — Project Tracker</h1>
+          <p>Development roadmap &amp; milestone tracking</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="sync-status">
+          <div class="sync-dot" id="sync-dot"></div>
+          <span id="sync-label">—</span>
+        </div>
+        <span class="overall-pill" id="overall-pill">Loading…</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="s-total">—</div><div class="stat-l">Total tasks</div></div>
+    <div class="stat"><div class="stat-n" id="s-done" style="color:var(--green)">—</div><div class="stat-l">Completed</div></div>
+    <div class="stat"><div class="stat-n" id="s-prog" style="color:var(--blue)">—</div><div class="stat-l">In progress</div></div>
+    <div class="stat"><div class="stat-n" id="s-ms">—</div><div class="stat-l">Active milestones</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab(this,'milestones')">Milestones</button>
+    <button class="tab" onclick="switchTab(this,'sprint')">Current Sprint</button>
+  </div>
+
+  <div id="view-milestones" class="view on">
+    <div class="ms-list" id="ms-list"></div>
+    <button class="add-ms-btn" onclick="openAddMs()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Add milestone
+    </button>
+  </div>
+
+  <div id="view-sprint" class="view">
+    <div id="sprint-view"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" style="display:none" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2 id="modal-title">Add milestone</h2>
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input class="form-input" id="ms-title-input" placeholder="e.g. Manager Dashboard — core" maxlength="80">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input class="form-input" id="ms-sub-input" placeholder="e.g. Client list, task tracking, sidebar" maxlength="100">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveMs()">Add milestone</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  STEP 1 — Create a free account at jsonbin.io
+//  STEP 2 — Create a new bin (any JSON content)
+//  STEP 3 — Paste your values below
+// ─────────────────────────────────────────────
+const BIN_ID  = '69c0760eaa77b81da90c1cbc';
+const API_KEY = '$2a$10$/Q85c8hr2cbXSf91vn/6DOoFjeEpQhCDKRppqaILueikop66fHXUG';
+// ─────────────────────────────────────────────
+
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const HEADERS = { 'Content-Type':'application/json', 'X-Master-Key': API_KEY };
+
+const DEFAULT_DATA = {
+  milestones: [
+    {
+      id:"m1",title:"Foundation & infrastructure",sub:"Auth, DB schema, deployment",
+      tasks:[
+        {id:"t101",text:"Supabase schema (16 tables) deployed to production",status:"done"},
+        {id:"t102",text:"Auth + login screen functional",status:"done"},
+        {id:"t103",text:"Fix Vercel Root Directory (set to `ledger`)",status:"done"},
+        {id:"t104",text:"Production environment variables configured",status:"todo"},
+        {id:"t105",text:"Error tracking (Sentry) set up",status:"todo"},
+        {id:"t106",text:"Test manager user validated in production",status:"done"}
+      ]
+    },
+    {
+      id:"m2",title:"Manager Dashboard — core",sub:"Primary manager interface",
+      tasks:[
+        {id:"t201",text:"Sidebar navigation (clients, tasks, profile)",status:"todo"},
+        {id:"t202",text:"Client list with filters and search",status:"todo"},
+        {id:"t203",text:"Client detail view (info + active tasks)",status:"todo"},
+        {id:"t204",text:"Create and edit tasks",status:"todo"},
+        {id:"t205",text:"Task status tracking (in progress, ready, approved)",status:"todo"},
+        {id:"t206",text:"Deadline calendar view",status:"todo"},
+        {id:"t207",text:"Responsive layout (mobile/tablet)",status:"todo"}
+      ]
+    },
+    {
+      id:"m3",title:"Payroll module",sub:"All pay frequencies",
+      tasks:[
+        {id:"t301",text:"Payroll tasks (weekly, bi-weekly, monthly frequencies)",status:"todo"},
+        {id:"t302",text:"DAS remittance tracking (15th of following month)",status:"todo"},
+        {id:"t303",text:"T4 / Relevé 1 task (December 31 deadline)",status:"todo"},
+        {id:"t304",text:"T4 reconciliation + CNESST declaration (Feb 28)",status:"todo"},
+        {id:"t305",text:"Tips credit flag for restaurant clients",status:"todo"}
+      ]
+    },
+    {
+      id:"m4",title:"Bookkeeping & sales tax module",sub:"HST/GST + QST",
+      tasks:[
+        {id:"t401",text:"Bookkeeping tasks with has_bookkeeping flag",status:"todo"},
+        {id:"t402",text:"HST/QST frequency-matched tracking",status:"todo"},
+        {id:"t403",text:"Year-end adjusting entries workflow (QuickBooks Desktop)",status:"todo"},
+        {id:"t404",text:"Auto-create linked task for bookkeeper",status:"todo"},
+        {id:"t405",text:"Close without supervisor review (adjusting entries)",status:"todo"}
+      ]
+    },
+    {
+      id:"m5",title:"Corporate tax module (T2 / CO-17)",sub:"Corporations + Quebec",
+      tasks:[
+        {id:"t501",text:"T2 task creation (fiscal year-end + 6 months)",status:"todo"},
+        {id:"t502",text:"CO-17 auto-linked to T2",status:"todo"},
+        {id:"t503",text:"Manager call before filing (log)",status:"todo"},
+        {id:"t504",text:"E-sign package triggered to group head",status:"todo"},
+        {id:"t505",text:"Signing authority rule (routes to group head)",status:"todo"}
+      ]
+    },
+    {
+      id:"m6",title:"Personal tax module (T1 / TP-1 & T3)",sub:"Individuals and trusts",
+      tasks:[
+        {id:"t601",text:"Document collection window (mid-Jan → end of Mar)",status:"todo"},
+        {id:"t602",text:"Manager call per client (log)",status:"todo"},
+        {id:"t603",text:"DT Max workflow (one person files all T1s)",status:"todo"},
+        {id:"t604",text:"Grouped e-sign + separate invoice",status:"todo"},
+        {id:"t605",text:"T3 trust return — identical workflow to T1",status:"todo"}
+      ]
+    },
+    {
+      id:"m7",title:"Employee portal",sub:"Assigned task view",
+      tasks:[
+        {id:"t701",text:"Employee dashboard — today's tasks",status:"todo"},
+        {id:"t702",text:"Mark task as 'ready for review'",status:"todo"},
+        {id:"t703",text:"Completed task history",status:"todo"},
+        {id:"t704",text:"Notifications for new assignments",status:"todo"}
+      ]
+    },
+    {
+      id:"m8",title:"Supervisor approval workflow",sub:"Two-tier approval",
+      tasks:[
+        {id:"t801",text:"Supervisor sees all 'ready' tasks",status:"todo"},
+        {id:"t802",text:"Approve task (final close)",status:"todo"},
+        {id:"t803",text:"Reject with mandatory written reason",status:"todo"},
+        {id:"t804",text:"Full audit trail (who did what, when)",status:"todo"}
+      ]
+    },
+    {
+      id:"m9",title:"Notifications & alerts",sub:"Deadlines, expirations, reminders",
+      tasks:[
+        {id:"t901",text:"Automated reminders before deadlines",status:"todo"},
+        {id:"t902",text:"CRA / Revenu Québec rep authorization expiry alerts",status:"todo"},
+        {id:"t903",text:"Transactional email (Resend / SendGrid)",status:"todo"},
+        {id:"t904",text:"In-app notifications (badge / toast)",status:"todo"}
+      ]
+    },
+    {
+      id:"m10",title:"T5 / Relevé 3 Dividends",sub:"Manual trigger, Feb 28",
+      tasks:[
+        {id:"t1001",text:"T5 task manually triggered by manager",status:"todo"},
+        {id:"t1002",text:"Relevé 3 auto-linked to T5",status:"todo"},
+        {id:"t1003",text:"February 28 deadline enforced",status:"todo"},
+        {id:"t1004",text:"No client signature required (UI confirmation)",status:"todo"}
+      ]
+    }
+  ]
+};
+
+let data = null;
+let saveTimer = null;
+let editingMsId = null;
+let activeTab = 'milestones';
+const isConfigured = () => BIN_ID !== 'PASTE_YOUR_BIN_ID_HERE' && API_KEY !== 'PASTE_YOUR_API_KEY_HERE';
+
+function setSyncStatus(state, label) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = label;
+}
+
+async function loadData() {
+  if (!isConfigured()) {
+    document.getElementById('config-banner').style.display = 'block';
+    data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    const cached = localStorage.getItem('ledger-tracker-local');
+    if (cached) { try { data = JSON.parse(cached); } catch(e){} }
+    setSyncStatus('err', 'local only');
+    document.getElementById('loading-screen').style.display = 'none';
+    renderAll();
+    return;
+  }
+  setSyncStatus('saving', 'loading…');
+  try {
+    const r = await fetch(JSONBIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+    if (r.ok) {
+      const json = await r.json();
+      data = json.record && json.record.milestones ? json.record : JSON.parse(JSON.stringify(DEFAULT_DATA));
+    } else if (r.status === 404) {
+      data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      await pushData();
+    } else {
+      throw new Error('HTTP ' + r.status);
+    }
+    setSyncStatus('ok', 'synced');
+  } catch(e) {
+    const cached = localStorage.getItem('ledger-tracker-local');
+    data = cached ? JSON.parse(cached) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+    setSyncStatus('err', 'offline — local cache');
+    showToast('⚠️ Could not reach JSONBin — using local cache', true);
+  }
+  document.getElementById('loading-screen').style.display = 'none';
+  renderAll();
+}
+
+async function pushData() {
+  localStorage.setItem('ledger-tracker-local', JSON.stringify(data));
+  if (!isConfigured()) return;
+  setSyncStatus('saving', 'saving…');
+  try {
+    await fetch(JSONBIN_URL, {
+      method: 'PUT',
+      headers: HEADERS,
+      body: JSON.stringify(data)
+    });
+    setSyncStatus('ok', 'saved');
+  } catch(e) {
+    setSyncStatus('err', 'save failed');
+    showToast('⚠️ Could not save to cloud — stored locally', true);
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushData, 800);
+}
+
+function showToast(msg, warn=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = warn ? 'var(--amber)' : 'var(--t1)';
+  t.style.color = warn ? '#000' : 'var(--bg)';
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ── Data helpers ── */
+function uid() { return 't' + Date.now() + Math.random().toString(36).slice(2,6); }
+function msStats(ms) {
+  const total = ms.tasks.length, done = ms.tasks.filter(t=>t.status==='done').length, prog = ms.tasks.filter(t=>t.status==='prog').length;
+  return { total, done, prog, pct: total ? Math.round(done/total*100) : 0 };
+}
+function tagClass(s){ return {todo:'todo',prog:'prog',done:'done',block:'block'}[s]||'todo'; }
+function tagLabel(s){ return {todo:'To do',prog:'In progress',done:'Done',block:'Blocked'}[s]||s; }
+function cbClass(s){ return s==='done'?'done':s==='prog'?'prog':''; }
+function cycleStatus(t){ const c={todo:'prog',prog:'done',done:'todo'}; t.status=c[t.status]||'todo'; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── Render ── */
+function renderMilestones() {
+  const list = document.getElementById('ms-list');
+  list.innerHTML = '';
+  data.milestones.forEach((ms, mi) => {
+    const {pct, prog} = msStats(ms);
+    const barColor = pct===100?'var(--green)':prog>0?'var(--blue)':'var(--border2)';
+    const card = document.createElement('div');
+    card.className = 'ms-card' + (ms._open?' open':'');
+    card.dataset.id = ms.id;
+    card.innerHTML = `
+      <div class="ms-head" onclick="toggleMs('${ms.id}',event)">
+        <span class="ms-num">M${mi+1}</span>
+        <div class="ms-info">
+          <div class="ms-title">${esc(ms.title)}</div>
+          <div class="ms-sub">${esc(ms.sub||'')}</div>
+        </div>
+        <div class="ms-bar-wrap"><div class="ms-bar" style="width:${pct}%;background:${barColor}"></div></div>
+        <span class="ms-pct">${pct}%</span>
+        <div class="ms-actions" onclick="event.stopPropagation()">
+          <button class="ms-btn" title="Edit" onclick="openEditMs('${ms.id}')">✎</button>
+          <button class="ms-btn del" title="Delete" onclick="deleteMs('${ms.id}')">×</button>
+        </div>
+        <span class="ms-chevron">▼</span>
+      </div>
+      <div class="ms-body">
+        <div class="task-list">
+          ${ms.tasks.map(t=>`
+            <div class="task-row" id="tr-${t.id}">
+              <div class="cb ${cbClass(t.status)}" onclick="toggleDone('${ms.id}','${t.id}')"></div>
+              <span class="task-text ${t.status==='done'?'done':''}">${esc(t.text)}</span>
+              <span class="tag ${tagClass(t.status)}" onclick="cycleTag('${ms.id}','${t.id}')">${tagLabel(t.status)}</span>
+              <button class="task-del" onclick="deleteTask('${ms.id}','${t.id}')">×</button>
+            </div>`).join('')}
+        </div>
+        <div class="add-task-row">
+          <input class="add-task-input" id="new-task-${ms.id}" placeholder="Add a task…" maxlength="120"
+            onkeydown="if(event.key==='Enter')addTask('${ms.id}')">
+          <button class="add-task-btn" onclick="addTask('${ms.id}')">Add</button>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function renderStats() {
+  let total=0,done=0,prog=0,active=0;
+  data.milestones.forEach(ms=>{ const s=msStats(ms); total+=s.total; done+=s.done; prog+=s.prog; if(s.pct>0&&s.pct<100) active++; });
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('s-prog').textContent=prog;
+  document.getElementById('s-ms').textContent=active||'—';
+  const pct=total?Math.round(done/total*100):0;
+  const pill=document.getElementById('overall-pill');
+  const configs=[
+    [0,'var(--bg3)','var(--t2)','Not started'],
+    [30,'var(--amber-bg)','var(--amber)','Early stage'],
+    [70,'var(--blue-bg)','var(--blue)','In progress'],
+    [99,'var(--blue-bg)','var(--blue)','Advanced'],
+    [100,'var(--green-bg)','var(--green)','Complete ✓']
+  ];
+  const cfg=configs.find(([t])=>pct<=t)||configs[configs.length-1];
+  pill.style.background=cfg[1]; pill.style.color=cfg[2]; pill.style.borderColor=cfg[2]+'44';
+  pill.textContent=pct<100?`${cfg[3]} · ${pct}%`:cfg[3];
+}
+
+function renderSprint() {
+  const sv=document.getElementById('sprint-view');
+  const today=new Date(), day=today.getDay();
+  const mon=new Date(today); mon.setDate(today.getDate()-(day===0?6:day-1));
+  const fri=new Date(mon); fri.setDate(mon.getDate()+4);
+  const fmt=d=>d.toLocaleDateString('en-CA',{day:'numeric',month:'short'});
+  const inProg=[];
+  data.milestones.forEach((ms,mi)=>ms.tasks.forEach(t=>{ if(t.status==='prog') inProg.push({ms:`M${mi+1}`,msTitle:ms.title,task:t}); }));
+  const section=(label,items,empty)=>!items.length
+    ?`<div class="sprint-section"><div class="sprint-label">${label}</div><div class="empty-sprint">${empty}</div></div>`
+    :`<div class="sprint-section"><div class="sprint-label">${label} (${items.length})</div>${items.map(i=>`
+      <div class="sprint-task">
+        <span class="sprint-ms">${i.ms}</span>
+        <div class="sprint-body"><div class="sprint-ms-name">${esc(i.msTitle)}</div><div class="sprint-task-text">${esc(i.task.text)}</div></div>
+        <span class="tag ${tagClass(i.task.status)}" onclick="cycleTag2('${i.task.id}')">${tagLabel(i.task.status)}</span>
+      </div>`).join('')}</div>`;
+  sv.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+      <div><div style="font-size:16px;font-weight:600">Current Sprint</div><div style="font-size:12px;color:var(--t2);font-family:var(--mono);margin-top:2px">${fmt(mon)} → ${fmt(fri)}</div></div>
+    </div>
+    ${section('🔵 In progress',inProg,'No tasks in progress — set a task to "In progress" in the Milestones tab')}
+    <div style="margin-top:10px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--t2)">
+      💡 Tasks marked <strong style="color:var(--t1)">In progress</strong> automatically appear here.
+    </div>`;
+}
+
+function renderAll(){ renderMilestones(); renderStats(); if(activeTab==='sprint') renderSprint(); }
+
+/* ── Actions ── */
+function toggleMs(id,e){ if(e&&e.target.closest('.ms-actions'))return; const ms=data.milestones.find(m=>m.id===id); if(ms) ms._open=!ms._open; const card=document.querySelector(`.ms-card[data-id="${id}"]`); if(card) card.classList.toggle('open',ms._open); }
+function toggleDone(msId,tId){ const ms=data.milestones.find(m=>m.id===msId); const t=ms&&ms.tasks.find(t=>t.id===tId); if(!t)return; t.status=t.status==='done'?'todo':'done'; renderAll(); scheduleSave(); }
+function cycleTag(msId,tId){ const ms=data.milestones.find(m=>m.id===msId); const t=ms&&ms.tasks.find(t=>t.id===tId); if(!t)return; cycleStatus(t); renderAll(); scheduleSave(); }
+function cycleTag2(tId){ data.milestones.forEach(ms=>{ const t=ms.tasks.find(t=>t.id===tId); if(t){cycleStatus(t);renderAll();scheduleSave();} }); }
+function addTask(msId){ const inp=document.getElementById('new-task-'+msId); const text=inp?inp.value.trim():''; if(!text)return; const ms=data.milestones.find(m=>m.id===msId); if(!ms)return; ms.tasks.push({id:uid(),text,status:'todo'}); inp.value=''; renderAll(); scheduleSave(); }
+function deleteTask(msId,tId){ const ms=data.milestones.find(m=>m.id===msId); if(!ms)return; ms.tasks=ms.tasks.filter(t=>t.id!==tId); renderAll(); scheduleSave(); }
+function deleteMs(id){ if(!confirm('Delete this milestone and all its tasks?'))return; data.milestones=data.milestones.filter(m=>m.id!==id); renderAll(); scheduleSave(); }
+
+/* ── Modal ── */
+function openAddMs(){ editingMsId=null; document.getElementById('modal-title').textContent='Add milestone'; document.getElementById('ms-title-input').value=''; document.getElementById('ms-sub-input').value=''; document.getElementById('modal-save-btn').textContent='Add milestone'; document.getElementById('modal').style.display='flex'; setTimeout(()=>document.getElementById('ms-title-input').focus(),50); }
+function openEditMs(id){ const ms=data.milestones.find(m=>m.id===id); if(!ms)return; editingMsId=id; document.getElementById('modal-title').textContent='Edit milestone'; document.getElementById('ms-title-input').value=ms.title; document.getElementById('ms-sub-input').value=ms.sub||''; document.getElementById('modal-save-btn').textContent='Save changes'; document.getElementById('modal').style.display='flex'; setTimeout(()=>document.getElementById('ms-title-input').focus(),50); }
+function saveMs(){ const title=document.getElementById('ms-title-input').value.trim(); const sub=document.getElementById('ms-sub-input').value.trim(); if(!title){document.getElementById('ms-title-input').focus();return;} if(editingMsId){const ms=data.milestones.find(m=>m.id===editingMsId);if(ms){ms.title=title;ms.sub=sub;}}else{data.milestones.push({id:'m'+Date.now(),title,sub,tasks:[],_open:true});} closeModal(); renderAll(); scheduleSave(); }
+function closeModal(e){ if(e&&e.target!==document.getElementById('modal'))return; document.getElementById('modal').style.display='none'; }
+
+function switchTab(btn,name){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); document.querySelectorAll('.view').forEach(v=>v.classList.remove('on')); btn.classList.add('on'); document.getElementById('view-'+name).classList.add('on'); activeTab=name; if(name==='sprint')renderSprint(); }
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')document.getElementById('modal').style.display='none'; if(e.key==='Enter'&&document.getElementById('modal').style.display!=='none')saveMs(); });
+
+loadData();
+</script>
+</body>
+</html>
